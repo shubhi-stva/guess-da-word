@@ -1,5 +1,5 @@
 {
-  "name": "endless-words",
+  "name": "guess-da-word",
   "version": "1.0.0",
   "private": true,
   "description": "Wordle-style word game with selectable word length and unlimited rounds",

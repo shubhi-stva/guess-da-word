@@ -65,7 +65,7 @@ body {
   margin: 0;
   font-family: "Karnak", Georgia, "Times New Roman", serif;
   font-weight: 700;
-  font-size: clamp(20px, 6vw, 30px);
+  font-size: clamp(17px, 5vw, 30px);
   letter-spacing: .01em;
   text-align: center;
   white-space: nowrap;

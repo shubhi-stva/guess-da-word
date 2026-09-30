@@ -4,7 +4,7 @@
  * so the game never breaks over a stats write.
  */
 
-const KEY = 'endless-words/v1';
+const KEY = 'guess-da-word/v1';
 let memory = null;
 
 function read() {

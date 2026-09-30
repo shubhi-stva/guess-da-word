@@ -274,7 +274,7 @@ function dismissToasts() {
 
 async function shareResult(won) {
   const tries = won ? game.history.length : 'X';
-  const text = `Endless Words — ${game.length} letters ${tries}/${game.rows}\n\n${shareGrid(game.history)}`;
+  const text = `Guess Da Word — ${game.length} letters ${tries}/${game.rows}\n\n${shareGrid(game.history)}`;
   try {
     await navigator.clipboard.writeText(text);
     return true;

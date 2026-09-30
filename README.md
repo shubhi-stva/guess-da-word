@@ -1,4 +1,4 @@
-# Endless Words
+# Guess Da Word
 
 A Wordle-style word game with two changes to the original: you pick how long the
 word is (4–9 letters), and you can play as many rounds as you like instead of
