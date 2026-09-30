@@ -8,18 +8,24 @@ const el = {
   board: $('board'),
   keyboard: $('keyboard'),
   toastArea: $('toast-area'),
-  lengthSelect: $('length-select'),
+  lengthGroup: $('length-group'),
   hardMode: $('hard-mode'),
+  themeToggle: $('theme-toggle'),
   newGame: $('new-game-btn'),
   backdrop: $('modal-backdrop'),
   helpModal: $('help-modal'),
   statsModal: $('stats-modal'),
+  settingsModal: $('settings-modal'),
+  helpTries: $('help-tries'),
   statsRow: $('stats-row'),
   statsScope: $('stats-scope-label'),
+  shareBtn: $('share-btn'),
   dist: $('dist'),
 };
 
 const KB_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+const BACKSPACE_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H7c-.7 0-1.2.4-1.6.9L0 12l5.4 8.1c.4.5 1 .9 1.6.9h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.6L17.6 17 14 13.4 10.4 17 9 15.6l3.6-3.6L9 8.4 10.4 7 14 10.6 17.6 7 19 8.4 15.4 12 19 15.6z"/></svg>';
 const RECENT_MAX = 40;
 
 /** Everything about the round in progress. */
@@ -73,16 +79,17 @@ function buildKeyboard() {
     if (i === 2) row.append(key('Enter', 'enter', true));
     else if (i === 1) row.append(spacer());
     for (const ch of letters) row.append(key(ch.toUpperCase(), ch));
-    if (i === 2) row.append(key('⌫', 'backspace', true));
+    if (i === 2) row.append(key(BACKSPACE_ICON, 'backspace', true, true));
     else if (i === 1) row.append(spacer());
     el.keyboard.append(row);
   });
 }
 
-function key(label, value, wide = false) {
+function key(label, value, wide = false, isIcon = false) {
   const b = document.createElement('button');
   b.className = wide ? 'key wide' : 'key';
-  b.textContent = label;
+  if (isIcon) b.innerHTML = label;
+  else b.textContent = label;
   b.dataset.key = value;
   b.type = 'button';
   b.setAttribute('aria-label', value === 'backspace' ? 'Backspace' : label);
@@ -167,7 +174,7 @@ async function submit() {
   if (guess.length < game.length) return reject(`Not enough letters`);
   if (!game.valid.has(guess)) return reject('Not in word list');
 
-  if (el.hardMode.checked) {
+  if (isOn(el.hardMode)) {
     const problem = hardModeViolation(guess, game.history);
     if (problem) return reject(problem);
   }
@@ -223,11 +230,16 @@ function finish(won) {
   if (won) {
     rowAt(game.row).classList.add('win');
     const praise = ['Genius', 'Magnificent', 'Impressive', 'Splendid', 'Great', 'Phew'];
-    const i = Math.min(game.history.length - 1, praise.length - 1);
-    endToast(`${praise[i]}! Streak ${stats.streak}`, won);
+    toast(praise[Math.min(game.history.length - 1, praise.length - 1)]);
   } else {
-    endToast(`The word was ${game.answer.toUpperCase()}`, won);
+    toast(game.answer.toUpperCase());
   }
+
+  // Wordle shows the result in the stats panel rather than leaving a toast
+  // sitting over the board; wait for the flip and bounce to play out first.
+  setTimeout(() => {
+    if (game.over) { renderStats(stats); openModal(el.statsModal); }
+  }, won ? 1800 : 1400);
 }
 
 /* ---------------------------------------------------------------- toasts */
@@ -245,34 +257,12 @@ function toast(message, { sticky = false } = {}) {
   return node;
 }
 
-function endToast(message, won) {
-  const node = toast(message, { sticky: true });
-  node.style.pointerEvents = 'auto';
-
-  const actions = document.createElement('div');
-  actions.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:10px';
-
-  const share = document.createElement('button');
-  share.className = 'btn';
-  share.textContent = 'Share';
-  share.addEventListener('click', () => shareResult(won).then((ok) => {
-    share.textContent = ok ? 'Copied!' : 'Copy failed';
-  }));
-
-  const next = document.createElement('button');
-  next.className = 'btn';
-  next.textContent = 'Next word';
-  next.addEventListener('click', () => newRound());
-
-  actions.append(share, next);
-  node.append(actions);
-}
-
 function dismissToasts() {
   el.toastArea.replaceChildren();
 }
 
-async function shareResult(won) {
+async function shareResult() {
+  const won = game.history.length && game.history.at(-1).marks.every((m) => m === CORRECT);
   const tries = won ? game.history.length : 'X';
   const text = `Guess Da Word — ${game.length} letters ${tries}/${game.rows}\n\n${shareGrid(game.history)}`;
   try {
@@ -294,11 +284,42 @@ function closeModals() {
   el.backdrop.hidden = true;
   el.helpModal.hidden = true;
   el.statsModal.hidden = true;
+  el.settingsModal.hidden = true;
 }
 
-function renderStats() {
+/* Switches are <button role="switch">, so state lives in aria-checked. */
+const isOn = (sw) => sw.getAttribute('aria-checked') === 'true';
+
+function setSwitch(sw, on) {
+  sw.setAttribute('aria-checked', String(Boolean(on)));
+}
+
+/** The length picker is a segmented radiogroup built from MIN/MAX_LENGTH. */
+function buildLengthGroup(selected) {
+  el.lengthGroup.replaceChildren();
+  for (let n = MIN_LENGTH; n <= MAX_LENGTH; n++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = n;
+    b.dataset.length = n;
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(n === selected));
+    b.setAttribute('aria-label', `${n} letters`);
+    el.lengthGroup.append(b);
+  }
+}
+
+function markLength(length) {
+  for (const b of el.lengthGroup.children) {
+    b.setAttribute('aria-checked', String(Number(b.dataset.length) === length));
+  }
+  el.helpTries.textContent = length + 1;
+}
+
+function renderStats(fresh) {
   const length = game.length;
-  const s = getStats(length);
+  const s = fresh || getStats(length);
+  el.shareBtn.hidden = !game.over;
   el.statsScope.textContent = `${length} letters`;
 
   const winRate = s.played ? Math.round((s.wins / s.played) * 100) : 0;
@@ -373,32 +394,45 @@ el.keyboard.addEventListener('click', (e) => {
 
 el.newGame.addEventListener('click', () => newRound());
 
-el.lengthSelect.addEventListener('change', () => {
-  const length = Number(el.lengthSelect.value);
+el.lengthGroup.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-length]');
+  if (!btn) return;
+  const length = Number(btn.dataset.length);
+  if (length === game.length) return;
+  markLength(length);
   setPref('length', length);
   newRound({ length });
 });
 
-el.hardMode.addEventListener('change', () => {
+el.hardMode.addEventListener('click', () => {
   // Switching on mid-round would retroactively invalidate earlier guesses.
-  if (el.hardMode.checked && game.history.length && !game.over) {
-    el.hardMode.checked = false;
-    toast('Hard mode must be set before the first guess');
+  if (!isOn(el.hardMode) && game.history.length && !game.over) {
+    toast('Hard mode can only be turned on at the start of a round');
     return;
   }
-  setPref('hardMode', el.hardMode.checked);
+  setSwitch(el.hardMode, !isOn(el.hardMode));
+  setPref('hardMode', isOn(el.hardMode));
 });
 
-$('help-btn').addEventListener('click', () => openModal(el.helpModal));
-$('stats-btn').addEventListener('click', () => { renderStats(); openModal(el.statsModal); });
-$('theme-btn').addEventListener('click', () => {
-  const dark = document.documentElement.dataset.theme !== 'dark';
+el.themeToggle.addEventListener('click', () => {
+  const dark = !isOn(el.themeToggle);
+  setSwitch(el.themeToggle, dark);
   applyTheme(dark);
   setPref('dark', dark);
 });
+
+$('help-btn').addEventListener('click', () => openModal(el.helpModal));
+$('settings-btn').addEventListener('click', () => openModal(el.settingsModal));
+$('stats-btn').addEventListener('click', () => { renderStats(); openModal(el.statsModal); });
 $('reset-stats-btn').addEventListener('click', () => {
   resetStats(game.length);
   renderStats();
+});
+$('stats-next-btn').addEventListener('click', () => { closeModals(); newRound(); });
+el.shareBtn.addEventListener('click', async () => {
+  const ok = await shareResult();
+  el.shareBtn.textContent = ok ? 'Copied!' : 'Copy failed';
+  setTimeout(() => { el.shareBtn.textContent = 'Share'; }, 1600);
 });
 
 el.backdrop.addEventListener('click', closeModals);
@@ -418,8 +452,10 @@ applyTheme(getPref('dark', prefersDark));
 
 const savedLength = Number(getPref('length', 5));
 const startLength = savedLength >= MIN_LENGTH && savedLength <= MAX_LENGTH ? savedLength : 5;
-el.lengthSelect.value = String(startLength);
-el.hardMode.checked = Boolean(getPref('hardMode', false));
+buildLengthGroup(startLength);
+markLength(startLength);
+setSwitch(el.hardMode, getPref('hardMode', false));
+setSwitch(el.themeToggle, document.documentElement.dataset.theme === 'dark');
 
 buildKeyboard();
 newRound({ length: startLength });
