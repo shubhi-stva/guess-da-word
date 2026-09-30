@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Endless Words</title>
+<meta name="description" content="Wordle-style word game with your choice of word length and unlimited rounds.">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='12' fill='%236aaa64'/><text y='72' x='50' font-size='64' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'>W</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="header">
+  <button class="icon-btn" id="help-btn" aria-label="How to play">?</button>
+  <h1 class="title">Endless Words</h1>
+  <div class="header-right">
+    <button class="icon-btn" id="stats-btn" aria-label="Statistics">&#9186;</button>
+    <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode">&#9789;</button>
+  </div>
+</header>
+
+<main class="game">
+  <div class="controls">
+    <label class="control">
+      <span>Letters</span>
+      <select id="length-select" aria-label="Word length">
+        <option value="4">4</option>
+        <option value="5" selected>5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+      </select>
+    </label>
+    <label class="control checkbox">
+      <input type="checkbox" id="hard-mode">
+      <span>Hard mode</span>
+    </label>
+    <button class="btn" id="new-game-btn">New word</button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board" role="grid" aria-label="Guess grid"></div>
+  </div>
+
+  <div class="toast-area" id="toast-area" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="keyboard" id="keyboard" aria-label="Keyboard"></div>
+</main>
+
+<div class="modal-backdrop" id="modal-backdrop" hidden></div>
+
+<section class="modal" id="help-modal" hidden aria-modal="true" role="dialog" aria-labelledby="help-title">
+  <button class="modal-close" data-close aria-label="Close">&times;</button>
+  <h2 id="help-title">How to play</h2>
+  <p>Guess the word. You get one more try than the word is long.</p>
+  <p>Each guess must be a real word of the chosen length. After each guess the tiles change colour to show how close you were.</p>
+  <div class="example">
+    <div class="tile small correct">w</div><div class="tile small">e</div><div class="tile small">a</div><div class="tile small">r</div><div class="tile small">y</div>
+  </div>
+  <p><strong>W</strong> is in the word and in the right spot.</p>
+  <div class="example">
+    <div class="tile small">p</div><div class="tile small present">i</div><div class="tile small">l</div><div class="tile small">l</div><div class="tile small">s</div>
+  </div>
+  <p><strong>I</strong> is in the word but in the wrong spot.</p>
+  <div class="example">
+    <div class="tile small">v</div><div class="tile small">a</div><div class="tile small">g</div><div class="tile small absent">u</div><div class="tile small">e</div>
+  </div>
+  <p><strong>U</strong> is not in the word anywhere.</p>
+  <p class="muted">Unlike the daily puzzle, you can play as many rounds as you like &mdash; pick a length and hit <em>New word</em> any time. <strong>Hard mode</strong> forces you to reuse every revealed hint.</p>
+</section>
+
+<section class="modal" id="stats-modal" hidden aria-modal="true" role="dialog" aria-labelledby="stats-title">
+  <button class="modal-close" data-close aria-label="Close">&times;</button>
+  <h2 id="stats-title">Statistics</h2>
+  <div class="stats-scope">
+    <span id="stats-scope-label">5 letters</span>
+  </div>
+  <div class="stats-row" id="stats-row"></div>
+  <h3>Guess distribution</h3>
+  <div class="dist" id="dist"></div>
+  <div class="modal-actions">
+    <button class="btn ghost" id="reset-stats-btn">Reset these stats</button>
+  </div>
+</section>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
