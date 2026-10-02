@@ -517,3 +517,121 @@ button { font: inherit; }
   cursor: pointer;
 }
 .link-btn:hover { color: var(--fg); }
+
+/* ---------------------------------------------------------------- splash */
+/* First-run welcome screen, in the spirit of Wordle's: a full-bleed panel
+   that covers the board so the game is revealed only once you hit Play. */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  overflow-y: auto;
+  animation: fade .25s ease;
+}
+
+.splash-inner {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  text-align: center;
+  animation: splash-rise .45s cubic-bezier(.2, .9, .3, 1) both;
+}
+
+@keyframes splash-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.splash-logo { display: flex; gap: 5px; justify-content: center; margin-bottom: 22px; }
+.splash-logo .tile {
+  --tile: 46px;
+  font-size: 23px;
+  opacity: 0;
+  animation: logo-flip .5s ease both;
+}
+.splash-logo .tile:nth-child(1) { animation-delay: .05s; }
+.splash-logo .tile:nth-child(2) { animation-delay: .15s; }
+.splash-logo .tile:nth-child(3) { animation-delay: .25s; }
+.splash-logo .tile:nth-child(4) { animation-delay: .35s; }
+.splash-logo .tile:nth-child(5) { animation-delay: .45s; }
+
+@keyframes logo-flip {
+  0%   { opacity: 0; transform: rotateX(-90deg) scale(.9); }
+  60%  { opacity: 1; transform: rotateX(10deg) scale(1); }
+  100% { opacity: 1; transform: rotateX(0) scale(1); }
+}
+
+.splash-title {
+  margin: 0 0 10px;
+  font-family: Georgia, "Times New Roman", "Karnak", serif;
+  font-size: clamp(30px, 9vw, 40px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.splash-tagline {
+  margin: 0 auto 24px;
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.splash-twists {
+  margin: 0 0 28px;
+  padding: 20px 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.splash-twists li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.splash-twists li + li { margin-top: 16px; }
+.splash-twists strong { font-weight: 700; }
+
+.twist-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 4px;
+  background: var(--correct);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.splash-twists li:nth-child(2) .twist-icon { background: var(--present); font-size: 24px; }
+.splash-twists li:nth-child(3) .twist-icon { background: var(--absent); font-size: 20px; }
+
+.splash-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn.big { padding: 14px 32px; font-size: 14px; border-radius: 24px; }
+
+.splash-byline {
+  margin: 26px 0 0;
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.splash-byline strong { color: var(--fg); font-weight: 700; }
+
+@media (max-height: 700px) {
+  .splash-logo .tile { --tile: 38px; font-size: 19px; }
+  .splash-twists { padding: 14px 0; margin-bottom: 20px; }
+  .splash-tagline { margin-bottom: 18px; }
+}
+.twist-icon svg { width: 22px; height: 22px; fill: currentColor; }

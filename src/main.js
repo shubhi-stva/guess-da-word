@@ -17,6 +17,7 @@ const el = {
   statsModal: $('stats-modal'),
   settingsModal: $('settings-modal'),
   helpTries: $('help-tries'),
+  splash: $('splash'),
   statsRow: $('stats-row'),
   statsScope: $('stats-scope-label'),
   shareBtn: $('share-btn'),
@@ -287,6 +288,11 @@ function closeModals() {
   el.settingsModal.hidden = true;
 }
 
+function closeSplash() {
+  el.splash.hidden = true;
+  setPref('seenSplash', true);
+}
+
 /* Switches are <button role="switch">, so state lives in aria-checked. */
 const isOn = (sw) => sw.getAttribute('aria-checked') === 'true';
 
@@ -356,7 +362,14 @@ function renderStats(fresh) {
 /* ------------------------------------------------------------------ wiring */
 
 document.addEventListener('keydown', (e) => {
-  if (!el.statsModal.hidden || !el.helpModal.hidden) {
+  if (!el.splash.hidden) {
+    if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+      closeSplash();
+      e.preventDefault();
+    }
+    return;
+  }
+  if (!el.statsModal.hidden || !el.helpModal.hidden || !el.settingsModal.hidden) {
     if (e.key === 'Escape') closeModals();
     return;
   }
@@ -421,6 +434,9 @@ el.themeToggle.addEventListener('click', () => {
   setPref('dark', dark);
 });
 
+$('splash-play').addEventListener('click', closeSplash);
+$('splash-help').addEventListener('click', () => { closeSplash(); openModal(el.helpModal); });
+
 $('help-btn').addEventListener('click', () => openModal(el.helpModal));
 $('settings-btn').addEventListener('click', () => openModal(el.settingsModal));
 $('stats-btn').addEventListener('click', () => { renderStats(); openModal(el.statsModal); });
@@ -459,7 +475,5 @@ setSwitch(el.themeToggle, document.documentElement.dataset.theme === 'dark');
 
 buildKeyboard();
 newRound({ length: startLength });
-if (!getPref('seenHelp', false)) {
-  openModal(el.helpModal);
-  setPref('seenHelp', true);
-}
+
+if (!getPref('seenSplash', false)) el.splash.hidden = false;

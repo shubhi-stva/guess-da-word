@@ -4,7 +4,8 @@ A Wordle-style word game with two changes to the original: you pick how long the
 word is (4–9 letters), and you can play as many rounds as you like instead of
 waiting for tomorrow's puzzle.
 
-Everything else follows Wordle: one more guess than the word is long, green for
+A welcome screen introduces the game on a first visit, then it stays out of
+the way; everything else follows Wordle: one more guess than the word is long, green for
 a letter in the right place, yellow for a letter in the wrong place, a colour-coded
 keyboard, and an optional hard mode that forces you to reuse every revealed hint.
 Stats are kept per word length, so your 5-letter streak is separate from your
@@ -76,7 +77,7 @@ styles.css            Wordle's palette as CSS custom properties; dark theme swap
 src/scoring.js        pure game rules — scoring, hard mode, share grid (no DOM)
 src/words.js          lazy per-length word list loading and answer selection
 src/stats.js          per-length stats and preferences in localStorage
-src/main.js           board, keyboard, input handling, round lifecycle
+src/main.js           splash, board, keyboard, input handling, round lifecycle
 scripts/              word list generation
 test/                 node:test suite
 ```

@@ -42,6 +42,43 @@
   <div class="keyboard" id="keyboard" aria-label="Keyboard"></div>
 </main>
 
+<section class="splash" id="splash" hidden aria-modal="true" role="dialog" aria-labelledby="splash-title">
+  <div class="splash-inner">
+    <div class="splash-logo" aria-hidden="true">
+      <div class="tile small correct">g</div>
+      <div class="tile small absent">u</div>
+      <div class="tile small present">e</div>
+      <div class="tile small absent">s</div>
+      <div class="tile small correct">s</div>
+    </div>
+
+    <h2 class="splash-title" id="splash-title">Guess Da Word</h2>
+    <p class="splash-tagline">Guess the hidden word. You always get one more try than the word is long.</p>
+
+    <ul class="splash-twists">
+      <li>
+        <span class="twist-icon" aria-hidden="true">4&ndash;9</span>
+        <span><strong>Pick your word length.</strong> Wordle is always five letters. Here you choose anything from four to nine.</span>
+      </li>
+      <li>
+        <span class="twist-icon" aria-hidden="true">&infin;</span>
+        <span><strong>Play as much as you want.</strong> No word of the day, no waiting until tomorrow &mdash; a new word whenever you ask for one.</span>
+      </li>
+      <li>
+        <span class="twist-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h3V10H4v10zm6.5 0h3V4h-3v16zM17 20h3v-7h-3v7z"/></svg></span>
+        <span><strong>Stats per length.</strong> Your four-letter streak is tracked separately from your nine-letter one.</span>
+      </li>
+    </ul>
+
+    <div class="splash-actions">
+      <button class="btn big" id="splash-play">Play</button>
+      <button class="btn ghost big" id="splash-help">How to play</button>
+    </div>
+
+    <p class="splash-byline">Designed &amp; built by <strong>Shubhi Srivastava</strong></p>
+  </div>
+</section>
+
 <div class="modal-backdrop" id="modal-backdrop" hidden></div>
 
 <section class="modal" id="help-modal" hidden aria-modal="true" role="dialog" aria-labelledby="help-title">
