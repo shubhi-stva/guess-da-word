@@ -83,3 +83,22 @@ for (const n of lengths) {
     }
   });
 }
+
+test('the guess list accepts modern words and well-known slang', () => {
+  // Older dictionaries predate all of these; they used to be rejected.
+  const expected = [
+    'emails', 'selfie', 'selfies', 'memes', 'texted', 'blogs', 'googled',
+    'podcast', 'blogger', 'tweeted', 'emoji', 'wifi', 'screenshot',
+    'yeet', 'bruh', 'lowkey', 'stoked', 'hangry', 'snazzy', 'adulting',
+  ];
+  const lists = Object.fromEntries(lengths.map((n) => [n, new Set(read(`dict-${n}.txt`))]));
+  const rejected = expected.filter((w) => w.length <= 9 && !lists[w.length]?.has(w));
+  assert.deepEqual(rejected, [], `these should be legal guesses: ${rejected}`);
+});
+
+test('the guess list covers the bulk of the English dictionary', () => {
+  // A whole-dictionary list is ~16k five-letter words; the old Webster's-only
+  // list had half that, which rejected too many real guesses.
+  assert.ok(read('dict-5.txt').length > 15000, 'five-letter guess list looks truncated');
+  assert.ok(read('dict-8.txt').length > 45000, 'eight-letter guess list looks truncated');
+});

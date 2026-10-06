@@ -56,15 +56,23 @@ length:
 | File | Role |
 | --- | --- |
 | `answers-N.txt` | ~1,400–2,100 common words; solutions are drawn only from here, so a round is always winnable |
-| `dict-N.txt` | 4,600–29,000 words; the legal-guess set, kept permissive so obscure-but-real guesses are accepted |
+| `dict-N.txt` | 7,500–54,000 words; the legal-guess set, kept as permissive as possible so a real word is never rejected |
 
-`scripts/build-words.py` regenerates both (`npm run words`). It takes Google's
-20k-most-frequent English words for the answer pool and keeps only those a
-case-sensitive spelling dictionary recognises as lowercase words — that step is
-what filters out proper nouns like *Cisco* and *Texas* and contraction forms
-like *didnt*, which plain word lists happily contain. The guess list comes from
-the system dictionary at `/usr/share/dict/words`. `scripts/blocklist.txt` keeps
-slurs and explicit terms out of the answer pool; they remain valid guesses.
+`scripts/build-words.py` regenerates both (`npm run words`).
+
+The **answer pool** takes Google's 20k-most-frequent English words and keeps
+only those a case-sensitive spelling dictionary recognises as lowercase words —
+that step is what filters out proper nouns like *Cisco* and *Texas* and
+contraction forms like *didnt*, which plain word lists happily contain.
+`scripts/blocklist.txt` keeps slurs and explicit terms out of the pool.
+
+The **guess list** is the union of a 370k-entry English word list, the system
+dictionary at `/usr/share/dict/words`, a spelling dictionary's headwords, the
+frequency list, and `scripts/slang.txt` — a curated list of well-known slang
+and modern vocabulary (*selfie*, *podcast*, *emoji*, *yeet*) that older
+dictionaries predate. Regular inflections of each slang entry are generated, so
+the file lists base forms only. Solutions are never drawn from it; it only
+widens what the game accepts.
 
 Regenerating requires network access and a system word list, and is only needed
 if you want to change the lengths or the sources.

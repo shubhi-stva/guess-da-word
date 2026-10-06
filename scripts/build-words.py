@@ -10,9 +10,12 @@ Two lists per length:
                  removes proper nouns (Texas, Cisco, Paris) and contraction
                  forms (didnt, thats) that a plain word list happily contains.
 
-  dict-N.txt     The legal-guess set: deliberately permissive, so an obscure
-                 but real guess is accepted. Webster's (the system word list)
-                 plus every answer, since the answer must always be guessable.
+  dict-N.txt     The legal-guess set, as permissive as we can make it so a
+                 real word is never rejected. The union of a 370k-entry English
+                 word list, the system dictionary, a spelling dictionary's
+                 headwords, the frequency list, a curated slang/modern list
+                 (scripts/slang.txt, with regular inflections generated), and
+                 every answer -- the solution must always be guessable.
 
 Sources are fetched over the network; nothing here needs to run at play time.
 Usage: python3 scripts/build-words.py
@@ -30,6 +33,8 @@ SYSTEM_WORDS = Path("/usr/share/dict/words")
 FREQUENCY_URL = "https://raw.githubusercontent.com/first20hours/google-10000-english/master/20k.txt"
 # Hunspell dictionary: case-sensitive, so a capitalised entry marks a proper noun.
 SPELLING_URL = "https://raw.githubusercontent.com/LibreOffice/dictionaries/master/en/en_US.dic"
+# ~370k entries: the broadest plain English list, inflections included.
+ALL_WORDS_URL = "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt"
 
 
 def fetch(url):
@@ -68,6 +73,32 @@ def is_english_word(word, roots):
     return any(c in roots for c in candidates)
 
 
+def read_list(path):
+    """Word list file, ignoring blank lines and # comments."""
+    out = set()
+    for line in path.read_text().splitlines():
+        word = line.split("#", 1)[0].strip().lower()
+        if word:
+            out.add(word)
+    return out
+
+
+def inflect(word):
+    """The regular inflections of `word`, so slang.txt can list base forms only."""
+    forms = {word}
+    if word.endswith(("s", "x", "z", "ch", "sh")):
+        forms.add(word + "es")
+    elif word.endswith("y") and len(word) > 2 and word[-2] not in "aeiou":
+        forms.add(word[:-1] + "ies")
+    else:
+        forms.add(word + "s")
+    if word.endswith("e"):
+        forms |= {word + "d", word[:-1] + "ing"}
+    else:
+        forms |= {word + "ed", word + "ing"}
+    return forms
+
+
 def main():
     if not SYSTEM_WORDS.exists():
         sys.exit(f"{SYSTEM_WORDS} not found; install a system word list (wamerican on Debian).")
@@ -82,6 +113,11 @@ def main():
     frequent = [w.lower() for w in fetch(FREQUENCY_URL).split() if w.isalpha()]
     print("fetching spelling dictionary...")
     roots = lowercase_roots(fetch(SPELLING_URL))
+    print("fetching full word list...")
+    all_words = {w for w in fetch(ALL_WORDS_URL).split() if re.fullmatch(r"[a-z]+", w)}
+
+    slang = read_list(ROOT / "scripts" / "slang.txt")
+    slang_forms = {form for w in slang for form in inflect(w)}
 
     webster = {
         w for w in SYSTEM_WORDS.read_text("utf-8", "replace").split()
@@ -96,7 +132,10 @@ def main():
             w for w in frequent
             if len(w) == n and w not in blocked and is_english_word(w, roots)
         })
-        legal = sorted({w for w in webster if len(w) == n} | set(answers))
+        legal = sorted(
+            {w for w in (webster | all_words | roots | set(frequent) | slang_forms) if len(w) == n}
+            | set(answers)
+        )
 
         (out / f"answers-{n}.txt").write_text("\n".join(answers) + "\n")
         (out / f"dict-{n}.txt").write_text("\n".join(legal) + "\n")
