@@ -9,7 +9,9 @@ the way; everything else follows Wordle: one more guess than the word is long, g
 a letter in the right place, yellow for a letter in the wrong place, a colour-coded
 keyboard, and an optional hard mode that forces you to reuse every revealed hint.
 Stats are kept per word length, so your 5-letter streak is separate from your
-9-letter one.
+9-letter one. Between rounds a strategy tip occasionally appears above the
+keyboard — always about the game itself, never about the word in play, and it
+can be turned off in settings.
 
 No frameworks, no build step — plain HTML, CSS and ES modules.
 
@@ -83,6 +85,7 @@ if you want to change the lengths or the sources.
 index.html            markup and the two modals
 styles.css            Wordle's palette as CSS custom properties; dark theme swaps values
 src/scoring.js        pure game rules — scoring, hard mode, share grid (no DOM)
+src/tips.js           the strategy tips and the no-repeat cycle that serves them
 src/words.js          lazy per-length word list loading and answer selection
 src/stats.js          per-length stats and preferences in localStorage
 src/main.js           splash, board, keyboard, input handling, round lifecycle

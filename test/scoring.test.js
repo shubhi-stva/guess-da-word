@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { score, hardModeViolation, shareGrid, CORRECT, PRESENT, ABSENT } from '../src/scoring.js';
+import { TIPS, createTipCycle } from '../src/tips.js';
 
 const marks = (guess, answer) =>
   score(guess, answer).map((m) => ({ [CORRECT]: 'G', [PRESENT]: 'Y', [ABSENT]: '.' })[m]).join('');
@@ -101,4 +102,32 @@ test('the guess list covers the bulk of the English dictionary', () => {
   // list had half that, which rejected too many real guesses.
   assert.ok(read('dict-5.txt').length > 15000, 'five-letter guess list looks truncated');
   assert.ok(read('dict-8.txt').length > 45000, 'eight-letter guess list looks truncated');
+});
+
+/* --- strategy tips --- */
+
+test('every tip is shown once before any repeats', () => {
+  const next = createTipCycle();
+  const first = new Set();
+  for (let i = 0; i < TIPS.length; i++) first.add(next());
+  assert.equal(first.size, TIPS.length, 'a tip repeated within the first pass');
+});
+
+test('a tip never immediately follows itself across cycles', () => {
+  const next = createTipCycle();
+  let previous = null;
+  for (let i = 0; i < TIPS.length * 5; i++) {
+    const tip = next();
+    assert.notEqual(tip, previous, 'the same tip appeared twice in a row');
+    previous = tip;
+  }
+});
+
+test('tips give strategy advice without referencing the current round', () => {
+  // A tip must never read as a hint about the word in play.
+  const forbidden = /\byour (guess|word|answer)\b|\bthis word\b|\bthe answer is\b/i;
+  for (const tip of TIPS) {
+    assert.ok(!forbidden.test(tip), `tip looks round-specific: "${tip}"`);
+    assert.ok(tip.length > 20, `tip is too terse: "${tip}"`);
+  }
 });

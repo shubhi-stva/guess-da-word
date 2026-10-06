@@ -39,6 +39,14 @@
 
   <div class="toast-area" id="toast-area" aria-live="polite" aria-atomic="true"></div>
 
+  <div class="tip" id="tip" role="status" hidden>
+    <span class="tip-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M9 21c0 .6.4 1 1 1h4c.6 0 1-.4 1-1v-1H9v1zm3-19A7 7 0 007 15.1c.9.8 1.6 1.8 1.9 2.9h6.2c.3-1.1 1-2.1 1.9-2.9A7 7 0 0012 2z"/></svg>
+    </span>
+    <p class="tip-text" id="tip-text"></p>
+    <button class="tip-close" id="tip-close" aria-label="Dismiss tip">&times;</button>
+  </div>
+
   <div class="keyboard" id="keyboard" aria-label="Keyboard"></div>
 </main>
 
@@ -134,6 +142,14 @@
       <div class="setting-desc">Any revealed hints must be used in subsequent guesses</div>
     </div>
     <button class="switch" id="hard-mode" role="switch" aria-checked="false" aria-label="Hard mode"><span></span></button>
+  </div>
+
+  <div class="setting">
+    <div class="setting-text">
+      <div class="setting-name">Strategy tips</div>
+      <div class="setting-desc">Occasional pointers between rounds. Never about the current word</div>
+    </div>
+    <button class="switch" id="tips-toggle" role="switch" aria-checked="true" aria-label="Strategy tips"><span></span></button>
   </div>
 
   <div class="setting">

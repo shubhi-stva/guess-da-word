@@ -1,6 +1,7 @@
 import { loadWords, pickAnswer, MIN_LENGTH, MAX_LENGTH } from './words.js';
 import { score, hardModeViolation, bestMark, shareGrid, CORRECT } from './scoring.js';
 import { getStats, recordResult, resetStats, getPref, setPref } from './stats.js';
+import { createTipCycle } from './tips.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -18,6 +19,9 @@ const el = {
   settingsModal: $('settings-modal'),
   helpTries: $('help-tries'),
   splash: $('splash'),
+  tip: $('tip'),
+  tipText: $('tip-text'),
+  tipsToggle: $('tips-toggle'),
   statsRow: $('stats-row'),
   statsScope: $('stats-scope-label'),
   shareBtn: $('share-btn'),
@@ -25,6 +29,9 @@ const el = {
 };
 
 const KB_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+const TIP_CHANCE = 0.45;      // roughly how often a round opens with a tip
+const TIP_MIN_GAP = 2;        // and never closer together than this many rounds
+const TIP_DURATION = 9000;
 const BACKSPACE_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H7c-.7 0-1.2.4-1.6.9L0 12l5.4 8.1c.4.5 1 .9 1.6.9h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.6L17.6 17 14 13.4 10.4 17 9 15.6l3.6-3.6L9 8.4 10.4 7 14 10.6 17.6 7 19 8.4 15.4 12 19 15.6z"/></svg>';
 const RECENT_MAX = 40;
@@ -33,6 +40,10 @@ const RECENT_MAX = 40;
 let game = null;
 const recentByLength = new Map();
 let busy = false; // true while tiles are flipping, so input is ignored
+let roundCount = 0;
+let lastTipRound = 0;
+let tipTimer = null;
+const nextTip = createTipCycle();
 
 /* ---------------------------------------------------------------- board */
 
@@ -61,10 +72,18 @@ function sizeBoard() {
   const { length, rows } = game;
   const gap = 5;
   const wrap = el.board.parentElement;
-  const availW = wrap.clientWidth - gap * (length - 1);
-  const availH = wrap.clientHeight - gap * (rows - 1) - 8;
+  const pad = getComputedStyle(wrap);
+
+  // clientWidth/Height include padding, so take it off explicitly -- the tip
+  // card claims its space by adding padding here.
+  const availW = wrap.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight) - gap * (length - 1);
+  let availH = wrap.clientHeight - parseFloat(pad.paddingTop) - parseFloat(pad.paddingBottom) - gap * (rows - 1);
+
   const size = Math.max(24, Math.floor(Math.min(availW / length, availH / rows, 62)));
   el.board.style.setProperty('--tile', `${size}px`);
+
+  // the tip card floats just above the keyboard, so it needs the real height
+  document.documentElement.style.setProperty('--kb-h', `${el.keyboard.offsetHeight}px`);
 }
 
 const rowAt = (i) => el.board.children[i];
@@ -149,6 +168,55 @@ async function newRound({ length = game?.length ?? 5, keepKeyboard = false } = {
   game.keyMarks = {};
   paintKeyboard();
   busy = false;
+
+  roundCount += 1;
+  maybeShowTip();
+}
+
+/* ------------------------------------------------------------------ tips */
+
+/**
+ * Tips appear between rounds, never mid-guess, and only once the player has a
+ * round behind them. They are drawn from a fixed list that knows nothing about
+ * the answer, so one can never amount to a hint.
+ */
+function maybeShowTip() {
+  if (!isOn(el.tipsToggle)) return;
+  if (roundCount < 2) return;                          // let the first round play out
+  if (roundCount - lastTipRound < TIP_MIN_GAP) return;
+  if (!el.splash.hidden || !el.statsModal.hidden || !el.helpModal.hidden || !el.settingsModal.hidden) return;
+  if (Math.random() > TIP_CHANCE) return;
+
+  lastTipRound = roundCount;
+  showTip(nextTip());
+}
+
+function showTip(text) {
+  clearTimeout(tipTimer);
+  el.tipText.textContent = text;
+  el.tip.hidden = false;
+  // restart the entrance animation if a tip is already on screen
+  el.tip.classList.remove('in');
+  void el.tip.offsetWidth;
+  el.tip.classList.add('in');
+
+  // Give the card its own space instead of letting it cover the bottom row:
+  // the board resizes to fit, and the tiles ease into their new size.
+  sizeBoard();
+
+  tipTimer = setTimeout(hideTip, TIP_DURATION);
+}
+
+function hideTip() {
+  clearTimeout(tipTimer);
+  if (el.tip.hidden) return;
+  el.tip.classList.remove('in');
+  el.tip.classList.add('out');
+  sizeBoard();
+  setTimeout(() => {
+    el.tip.hidden = true;
+    el.tip.classList.remove('out');
+  }, 220);
 }
 
 /* ----------------------------------------------------------------- input */
@@ -171,6 +239,7 @@ function backspace() {
 
 async function submit() {
   const guess = game.current;
+  hideTip();
 
   if (guess.length < game.length) return reject(`Not enough letters`);
   if (!game.valid.has(guess)) return reject('Not in word list');
@@ -206,22 +275,40 @@ function reject(message) {
   row.classList.add('shake');
 }
 
+/**
+ * Flips a row one tile at a time. The stagger shrinks as words get longer so a
+ * nine-letter reveal still lands in about a second instead of dragging on, and
+ * each tile recolours at the midpoint of its own flip, when it is edge-on.
+ */
 function reveal(rowIndex, marks) {
   busy = true;
   const row = rowAt(rowIndex);
+  const stagger = Math.max(95, Math.min(180, 900 / marks.length));
+  const flip = 420;
+
   return new Promise((resolve) => {
     marks.forEach((mark, i) => {
       const tile = row.children[i];
+      tile.style.setProperty('--flip', `${flip}ms`);
       setTimeout(() => {
         tile.classList.add('reveal');
         setTimeout(() => {
           tile.classList.remove('filled');
           tile.classList.add(mark);
-        }, 250);
-      }, i * 250);
+        }, flip / 2);
+      }, i * stagger);
     });
-    setTimeout(() => { busy = false; resolve(); }, marks.length * 250 + 300);
+    setTimeout(() => { busy = false; resolve(); }, (marks.length - 1) * stagger + flip + 60);
   });
+}
+
+/** Wordle's victory bounce, rippling left to right rather than all at once. */
+function celebrate(rowIndex) {
+  const row = rowAt(rowIndex);
+  [...row.children].forEach((tile, i) => {
+    tile.style.setProperty('--bounce-delay', `${i * 85}ms`);
+  });
+  row.classList.add('win');
 }
 
 function finish(won) {
@@ -229,7 +316,7 @@ function finish(won) {
   const stats = recordResult(game.length, { won, guesses: game.history.length });
 
   if (won) {
-    rowAt(game.row).classList.add('win');
+    celebrate(game.row);
     const praise = ['Genius', 'Magnificent', 'Impressive', 'Splendid', 'Great', 'Phew'];
     toast(praise[Math.min(game.history.length - 1, praise.length - 1)]);
   } else {
@@ -434,6 +521,14 @@ el.themeToggle.addEventListener('click', () => {
   setPref('dark', dark);
 });
 
+$('tip-close').addEventListener('click', hideTip);
+
+el.tipsToggle.addEventListener('click', () => {
+  setSwitch(el.tipsToggle, !isOn(el.tipsToggle));
+  setPref('tips', isOn(el.tipsToggle));
+  if (!isOn(el.tipsToggle)) hideTip();
+});
+
 $('splash-play').addEventListener('click', closeSplash);
 $('splash-help').addEventListener('click', () => { closeSplash(); openModal(el.helpModal); });
 
@@ -471,6 +566,7 @@ const startLength = savedLength >= MIN_LENGTH && savedLength <= MAX_LENGTH ? sav
 buildLengthGroup(startLength);
 markLength(startLength);
 setSwitch(el.hardMode, getPref('hardMode', false));
+setSwitch(el.tipsToggle, getPref('tips', true));
 setSwitch(el.themeToggle, document.documentElement.dataset.theme === 'dark');
 
 buildKeyboard();
