@@ -963,24 +963,6 @@ button { font: inherit; }
   100% { opacity: .25; transform: scale(.9); }
 }
 
-.splash-homage {
-  margin: -14px auto 24px;
-  max-width: 36ch;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.splash-homage strong { color: var(--fg); font-weight: 700; }
-
-.splash-legal {
-  margin: 14px auto 0;
-  max-width: 44ch;
-  font-size: 10.5px;
-  line-height: 1.5;
-  color: var(--muted);
-  opacity: .75;
-}
-
 .note.legal {
   margin-top: 10px !important;
   padding-top: 0;
