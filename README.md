@@ -1,5 +1,7 @@
 # Guess Da Word
 
+### ▶ [Play it here](https://shubhi-stva.github.io/guess-da-word/)
+
 A fun twist on Wordle, the classic daily word game from The New York Times.
 This is an independent fan project, not affiliated with, endorsed by, or
 sponsored by The New York Times Company. Wordle is a trademark of The New York
