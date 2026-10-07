@@ -100,6 +100,7 @@ if you want to change the lengths or the sources.
 index.html            markup and the two modals
 styles.css            Wordle's palette as CSS custom properties; dark theme swaps values
 src/scoring.js        pure game rules — scoring, hard mode, share grid (no DOM)
+src/praise.js         what the game says at the end of a round, banded by pace
 src/tips.js           the strategy tips and the no-repeat cycle that serves them
 src/timer.js          the pausable countdown behind the two-minute round clock
 src/words-version.js  generated fingerprint of words/, used to bust stale caches

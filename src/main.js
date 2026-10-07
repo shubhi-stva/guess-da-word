@@ -3,6 +3,7 @@ import { score, hardModeViolation, bestMark, shareGrid, CORRECT } from './scorin
 import { getStats, recordResult, resetStats, getPref, setPref } from './stats.js';
 import { createTipCycle } from './tips.js';
 import { createCountdown, formatClock } from './timer.js';
+import { createPhrasePicker } from './praise.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -60,6 +61,7 @@ let lastTipRound = 0;
 let tipTimer = null;
 const nextTip = createTipCycle();
 const countdown = createCountdown(ROUND_MS);
+const phrases = createPhrasePicker();
 let clockTimer = null;
 let startSeq = 0;             // bumped to cancel an in-flight count-in
 let pendingStart = false;     // a count-in waiting for a dialog to close
@@ -435,10 +437,10 @@ function finish(won, { timedOut = false } = {}) {
 
   if (won) {
     celebrate(game.row);
-    const praise = ['Genius', 'Magnificent', 'Impressive', 'Splendid', 'Great', 'Phew'];
-    toast(praise[Math.min(game.history.length - 1, praise.length - 1)]);
+    toast(phrases.win(game.history.length, game.rows));
   } else {
-    toast(timedOut ? `Time! The word was ${game.answer.toUpperCase()}` : game.answer.toUpperCase());
+    const opener = timedOut ? phrases.timeout() : phrases.loss();
+    toast(`${opener} \u2014 the word was ${game.answer.toUpperCase()}`);
   }
 
   // Wordle shows the result in the stats panel rather than leaving a toast

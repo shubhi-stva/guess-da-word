@@ -5,6 +5,7 @@ import { score, hardModeViolation, shareGrid, CORRECT, PRESENT, ABSENT } from '.
 import { TIPS, createTipCycle } from '../src/tips.js';
 import { WORDS_VERSION } from '../src/words-version.js';
 import { createCountdown, formatClock } from '../src/timer.js';
+import { WIN_PHRASES, LOSS_PHRASES, TIMEOUT_PHRASES, tierFor, createPhrasePicker } from '../src/praise.js';
 import { createHash } from 'node:crypto';
 
 const marks = (guess, answer) =>
@@ -223,4 +224,49 @@ test('clock formatting pads seconds and rounds up', () => {
   assert.equal(formatClock(1), '0:01');
   assert.equal(formatClock(9000), '0:09');
   assert.equal(formatClock(61000), '1:01');
+});
+
+/* --- end-of-round phrases --- */
+
+test('the winning tier follows where the guess landed, not a fixed index', () => {
+  // a five-letter word allows six tries, a nine-letter word ten
+  assert.equal(tierFor(1, 6), 'first');
+  assert.equal(tierFor(2, 6), 'second');
+  assert.equal(tierFor(3, 6), 'third');
+  assert.equal(tierFor(4, 6), 'middle');
+  assert.equal(tierFor(5, 6), 'nearLast');
+  assert.equal(tierFor(6, 6), 'last');
+
+  // guess six is a comfortable finish on a long word, not a last-gasp save
+  assert.equal(tierFor(6, 10), 'middle');
+  assert.equal(tierFor(9, 10), 'nearLast');
+  assert.equal(tierFor(10, 10), 'last');
+});
+
+test('a one-guess win is the top tier even on the shortest board', () => {
+  assert.equal(tierFor(1, 5), 'first');
+});
+
+test('phrases are our own, not the ones Wordle ships', () => {
+  const wordle = ['genius', 'magnificent', 'impressive', 'splendid', 'great', 'phew'];
+  const all = [...Object.values(WIN_PHRASES).flat(), ...LOSS_PHRASES, ...TIMEOUT_PHRASES];
+  for (const phrase of all) {
+    assert.ok(!wordle.includes(phrase.toLowerCase().replace(/[!.]/g, '')), `"${phrase}" is Wordle's`);
+  }
+});
+
+test('every tier has phrases to draw from', () => {
+  for (const [tier, list] of Object.entries(WIN_PHRASES)) {
+    assert.ok(list.length >= 3, `${tier} has only ${list.length}`);
+  }
+});
+
+test('a phrase never immediately repeats itself', () => {
+  const picker = createPhrasePicker();
+  let previous = null;
+  for (let i = 0; i < 200; i++) {
+    const phrase = picker.win(3, 6);   // same tier every time, the hardest case
+    assert.notEqual(phrase, previous, 'the same phrase came up twice running');
+    previous = phrase;
+  }
 });
