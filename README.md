@@ -4,13 +4,14 @@ A Wordle-style word game with two changes to the original: you pick how long the
 word is (4–9 letters), and you can play as many rounds as you like instead of
 waiting for tomorrow's puzzle.
 
-A welcome screen introduces the game on a first visit, then it stays out of
-the way; everything else follows Wordle: one more guess than the word is long, green for
+A welcome screen opens on every visit and holds the game until you press Play;
+everything else follows Wordle: one more guess than the word is long, green for
 a letter in the right place, yellow for a letter in the wrong place, a colour-coded
 keyboard, and an optional hard mode that forces you to reuse every revealed hint.
 Stats are kept per word length, so your 5-letter streak is separate from your
-9-letter one. Each round is on a two-minute clock, which pauses whenever a
-dialog is open and can be switched off in settings. Between rounds a strategy
+9-letter one. Each round is on a two-minute clock that opens with a 3-2-1
+count-in, pauses whenever a dialog is open, and can be switched off in
+settings. Between rounds a strategy
 tip occasionally appears above the keyboard — always about the game itself,
 never about the word in play, and also optional.
 

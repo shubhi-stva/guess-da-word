@@ -135,6 +135,7 @@ button { font: inherit; }
   min-height: 0;
   padding: 10px 16px;
   overflow: hidden;
+  position: relative;        /* the count-in overlay anchors to this */
   /* The grid reads its space from here with cq units. The wrapper's own size
      comes from the flex layout, never from the grid, so there is no cycle. */
   container-type: size;
@@ -773,4 +774,47 @@ button { font: inherit; }
 @keyframes timer-pulse {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.06); }
+}
+
+/* -------------------------------------------------------------- count-in */
+/* The 3-2-1 before the round clock starts. It covers the board so the grid is
+   not readable until the timer is actually running. */
+
+.count-in {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(2px);
+  animation: fade .15s ease;
+}
+
+.count-in-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+
+.count-in-number {
+  font-family: Georgia, "Times New Roman", "Karnak", serif;
+  font-size: clamp(64px, 18vmin, 120px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--correct);
+}
+
+.count-in-number.tick { animation: count-tick .7s cubic-bezier(.2, .9, .3, 1) both; }
+
+@keyframes count-tick {
+  0%   { opacity: 0; transform: scale(1.5); }
+  25%  { opacity: 1; transform: scale(1); }
+  80%  { opacity: 1; transform: scale(1); }
+  100% { opacity: .25; transform: scale(.9); }
 }

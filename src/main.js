@@ -27,6 +27,8 @@ const el = {
   timer: $('timer'),
   timerValue: $('timer-value'),
   timerToggle: $('timer-toggle'),
+  countIn: $('count-in'),
+  countInNumber: $('count-in-number'),
   statsRow: $('stats-row'),
   statsScope: $('stats-scope-label'),
   shareBtn: $('share-btn'),
@@ -39,6 +41,7 @@ const TIP_MIN_GAP = 2;        // and never closer together than this many rounds
 const TIP_DURATION = 9000;
 const ROUND_MS = 120000;      // two minutes per round
 const CLOCK_TICK = 200;
+const COUNT_IN_STEP = 700;    // how long each of 3, 2, 1 is held
 const BACKSPACE_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H7c-.7 0-1.2.4-1.6.9L0 12l5.4 8.1c.4.5 1 .9 1.6.9h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.6L17.6 17 14 13.4 10.4 17 9 15.6l3.6-3.6L9 8.4 10.4 7 14 10.6 17.6 7 19 8.4 15.4 12 19 15.6z"/></svg>';
 const RECENT_MAX = 40;
@@ -53,6 +56,9 @@ let tipTimer = null;
 const nextTip = createTipCycle();
 const countdown = createCountdown(ROUND_MS);
 let clockTimer = null;
+let startSeq = 0;             // bumped to cancel an in-flight count-in
+let pendingStart = false;     // a count-in waiting for a dialog to close
+let countingIn = false;
 
 /* ---------------------------------------------------------------- board */
 
@@ -159,7 +165,7 @@ async function newRound({ length = game?.length ?? 5, keepKeyboard = false } = {
 
   roundCount += 1;
   maybeShowTip();
-  startClock();
+  armClock();
 }
 
 /* ----------------------------------------------------------------- clock */
@@ -168,15 +174,65 @@ function timerEnabled() {
   return isOn(el.timerToggle);
 }
 
-function startClock() {
+/**
+ * Readies the clock for a new round. The countdown does not begin until the
+ * player can actually see the board, so a count-in waits behind the welcome
+ * screen or any open dialog and runs once it closes.
+ */
+function armClock() {
   stopClock();
+  startSeq += 1;            // supersede any count-in still running
+  countingIn = false;
+  pendingStart = false;
+  hideCountIn();
+
   el.timer.hidden = !timerEnabled();
   if (!timerEnabled()) return;
 
+  renderClock();            // reads the full duration while stopped
+  if (anyDialogOpen()) {
+    pendingStart = true;
+    return;
+  }
+  runCountIn();
+}
+
+/** Counts 3, 2, 1 over the board, then starts the clock. */
+async function runCountIn() {
+  const seq = startSeq;
+  pendingStart = false;
+  countingIn = true;
+
+  for (const n of [3, 2, 1]) {
+    if (seq !== startSeq) return;       // a new round started under us
+    showCountIn(n);
+    await new Promise((resolve) => setTimeout(resolve, COUNT_IN_STEP));
+  }
+  if (seq !== startSeq) return;
+
+  hideCountIn();
+  countingIn = false;
+  startClock();
+}
+
+function showCountIn(n) {
+  el.countInNumber.textContent = n;
+  el.countIn.hidden = false;
+  // restart the zoom for each number
+  el.countInNumber.classList.remove('tick');
+  void el.countInNumber.offsetWidth;
+  el.countInNumber.classList.add('tick');
+}
+
+function hideCountIn() {
+  el.countIn.hidden = true;
+}
+
+function startClock() {
   countdown.start();
-  // a dialog open at the start of a round should not burn the clock
   if (anyDialogOpen()) countdown.pause();
   renderClock();
+  clearInterval(clockTimer);
   clockTimer = setInterval(onClockTick, CLOCK_TICK);
 }
 
@@ -209,9 +265,23 @@ function anyDialogOpen() {
 }
 
 function syncClockWithDialogs() {
-  if (!timerEnabled() || !clockTimer) return;
-  if (anyDialogOpen()) countdown.pause();
-  else countdown.resume();
+  if (!timerEnabled()) return;
+
+  if (anyDialogOpen()) {
+    // a count-in interrupted by a dialog restarts from 3 once it closes
+    if (countingIn) {
+      startSeq += 1;
+      countingIn = false;
+      hideCountIn();
+      pendingStart = true;
+    }
+    countdown.pause();
+  } else if (pendingStart) {
+    runCountIn();
+    return;
+  } else {
+    countdown.resume();
+  }
   renderClock();
 }
 
@@ -353,6 +423,8 @@ function celebrate(rowIndex) {
 function finish(won, { timedOut = false } = {}) {
   game.over = true;
   stopClock();
+  hideCountIn();
+  countingIn = false;
   hideTip();
   const stats = recordResult(game.length, { won, guesses: game.history.length });
 
@@ -420,7 +492,6 @@ function closeModals() {
 
 function closeSplash() {
   el.splash.hidden = true;
-  setPref('seenSplash', true);
   syncClockWithDialogs();
 }
 
@@ -505,7 +576,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (busy || !game?.answer) return;
+  if (busy || countingIn || !game?.answer) return;
 
   if (e.key === 'Enter') {
     if (game.over) newRound();
@@ -522,7 +593,7 @@ document.addEventListener('keydown', (e) => {
 
 el.keyboard.addEventListener('click', (e) => {
   const btn = e.target.closest('.key');
-  if (!btn || busy || !game?.answer) return;
+  if (!btn || busy || countingIn || !game?.answer) return;
   const k = btn.dataset.key;
   if (k === 'enter') {
     if (game.over) newRound();
@@ -572,7 +643,7 @@ el.timerToggle.addEventListener('click', () => {
     stopClock();
     el.timer.hidden = true;
   } else if (!game.over) {
-    startClock();   // the current round gets a full two minutes
+    armClock();     // the current round gets a fresh two minutes
   }
 });
 
@@ -626,6 +697,9 @@ setSwitch(el.timerToggle, getPref('timer', true));
 setSwitch(el.themeToggle, document.documentElement.dataset.theme === 'dark');
 
 buildKeyboard();
-newRound({ length: startLength });
+// The welcome screen opens on every visit, not just the first, so the game is
+// always introduced before it can be played. It also holds the round clock:
+// the 3-2-1 count-in waits until Play is pressed.
+el.splash.hidden = false;
 
-if (!getPref('seenSplash', false)) el.splash.hidden = false;
+newRound({ length: startLength });
