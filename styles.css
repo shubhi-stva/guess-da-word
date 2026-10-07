@@ -474,34 +474,178 @@ button { font: inherit; }
 
 /* ----------------------------------------------------------------- stats */
 
-.stats-scope {
-  text-align: center;
-  font-size: 12px;
+.stats-modal .btn,
+.stats-modal .link-btn {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+}
+.stats-modal .btn { border-radius: 999px; padding: 11px 22px; }
+.stats-modal .link-btn { text-decoration: none; border-bottom: 1px solid var(--border); }
+.stats-modal .link-btn:hover { border-bottom-color: var(--border-strong); }
+
+/* The panel deliberately steps away from the board's chrome: serif numerals,
+   sentence-case labels, and a length ladder -- a record per word length, which
+   is the one thing a single-length word game has no use for. */
+
+.stats-modal { padding-top: 22px; }
+
+.stats-title {
+  margin: 0 0 18px !important;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px !important;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+}
+
+/* --- the ladder --- */
+
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  align-items: end;
+}
+
+.rung {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
   color: var(--muted);
 }
 
-.stats-row { display: flex; justify-content: center; margin: 14px 0 4px; }
-.stat { flex: 1; text-align: center; }
-.stat .num { font-size: 34px; font-weight: 400; font-variant-numeric: tabular-nums; }
-.stat .label { font-size: 12px; line-height: 1.2; }
-
-.dist { font-size: 14px; }
-.dist-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.dist-row .n { width: 14px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
-.dist-row .bar {
-  background: var(--absent);
-  color: #fff;
-  font-weight: 700;
-  padding: 1px 6px;
-  min-width: 24px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  transition: width .4s cubic-bezier(.2, .9, .3, 1);
+.rung-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 54px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  overflow: hidden;
 }
-.dist-row.current .bar { background: var(--correct); }
+
+.rung-fill {
+  width: 100%;
+  background: color-mix(in srgb, var(--correct) 45%, transparent);
+  border-radius: 3px 3px 0 0;
+  transition: height .45s cubic-bezier(.2, .9, .3, 1), background-color .2s ease;
+}
+
+.rung-label {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rung:hover .rung-fill { background: color-mix(in srgb, var(--correct) 70%, transparent); }
+.rung:hover .rung-label { color: var(--fg); }
+
+.rung[aria-selected="true"] .rung-fill { background: var(--correct); }
+.rung[aria-selected="true"] .rung-label { color: var(--fg); }
+.rung[aria-selected="true"] .rung-track { box-shadow: inset 0 0 0 1px var(--border-strong); }
+
+.rung.empty .rung-track {
+  /* played nothing here yet -- a dashed floor, so it does not read as 0% won */
+  background: none;
+  box-shadow: inset 0 -1px 0 0 var(--border);
+  border: 1px dashed var(--border);
+  border-bottom: 0;
+}
+.rung.empty .rung-label { opacity: .55; }
+
+.ladder-caption {
+  margin: 10px 0 0 !important;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* --- headline figures --- */
+
+.headline {
+  display: flex;
+  gap: 24px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.figure-value {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.figure-label {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* --- distribution --- */
+
+.dist-title {
+  margin: 22px 0 10px !important;
+  font-size: 13px !important;
+  font-weight: 700;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  color: var(--muted);
+}
+
+.dist-row {
+  display: grid;
+  grid-template-columns: 14px 1fr 22px;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 5px;
+}
+
+.dist-n {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.dist-track {
+  height: 20px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+  overflow: hidden;
+}
+
+.dist-bar {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--correct) 55%, transparent);
+  transition: width .5s cubic-bezier(.2, .9, .3, 1);
+}
+
+.dist-row.current .dist-bar { background: var(--correct); }
+
+.dist-count {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.dist-count.zero { color: color-mix(in srgb, var(--muted) 55%, transparent); }
+
+.stats-empty {
+  margin: 22px 0 0 !important;
+  color: var(--muted);
+}
 
 /* ---------------------------------------------------------------- mobile */
 

@@ -16,7 +16,8 @@ everything else follows Wordle: one more guess than the word is long, green for
 a letter in the right place, yellow for a letter in the wrong place, a colour-coded
 keyboard, and an optional hard mode that forces you to reuse every revealed hint.
 Stats are kept per word length, so your 5-letter streak is separate from your
-9-letter one. Each round is on a two-minute clock that opens with a 3-2-1
+9-letter one. The record panel shows all six lengths at once as a ladder of win
+rates — you can browse any of them and start a round at that length from there. Each round is on a two-minute clock that opens with a 3-2-1
 count-in, pauses whenever a dialog is open, and can be switched off in
 settings. Between rounds a strategy
 tip occasionally appears above the keyboard — always about the game itself,

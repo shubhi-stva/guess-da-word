@@ -30,9 +30,14 @@ const el = {
   countIn: $('count-in'),
   countInNumber: $('count-in-number'),
   statsRow: $('stats-row'),
-  statsScope: $('stats-scope-label'),
   shareBtn: $('share-btn'),
   dist: $('dist'),
+  ladder: $('ladder'),
+  ladderCaption: $('ladder-caption'),
+  headline: $('headline'),
+  statsEmpty: $('stats-empty'),
+  distBlock: $('dist-block'),
+  statsNext: $('stats-next-btn'),
 };
 
 const KB_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
@@ -439,7 +444,7 @@ function finish(won, { timedOut = false } = {}) {
   // Wordle shows the result in the stats panel rather than leaving a toast
   // sitting over the board; wait for the flip and bounce to play out first.
   setTimeout(() => {
-    if (game.over) { renderStats(stats); openModal(el.statsModal); }
+    if (game.over) { statsView = game.length; renderStats(stats); openModal(el.statsModal); }
   }, won ? 1800 : 1400);
 }
 
@@ -524,39 +529,114 @@ function markLength(length) {
   el.helpTries.textContent = length + 1;
 }
 
+/** Which length the stats panel is showing; the game's own length by default. */
+let statsView = null;
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
 function renderStats(fresh) {
-  const length = game.length;
-  const s = fresh || getStats(length);
-  el.shareBtn.hidden = !game.over;
-  el.statsScope.textContent = `${length} letters`;
-
+  const length = statsView ?? game.length;
+  const s = length === game.length && fresh ? fresh : getStats(length);
   const winRate = s.played ? Math.round((s.wins / s.played) * 100) : 0;
-  const cells = [
-    [s.played, 'Played'],
-    [winRate, 'Win %'],
-    [s.streak, 'Current<br>streak'],
-    [s.maxStreak, 'Max<br>streak'],
-  ];
-  el.statsRow.replaceChildren(...cells.map(([num, label]) => {
-    const d = document.createElement('div');
-    d.className = 'stat';
-    d.innerHTML = `<div class="num">${num}</div><div class="label">${label}</div>`;
-    return d;
-  }));
 
+  el.shareBtn.hidden = !(game.over && length === game.length);
+  el.statsNext.textContent = `Play ${length} letters`;
+
+  renderLadder(length);
+  el.ladderCaption.textContent = s.played
+    ? `${plural(s.played, 'round')} at ${length} letters, ${s.wins} won`
+    : `${length} letters`;
+
+  const empty = s.played === 0;
+  el.headline.hidden = empty;
+  el.distBlock.hidden = empty;
+  el.statsEmpty.hidden = !empty;
+  el.statsEmpty.textContent = `No rounds yet at ${length} letters. Play one and it shows up here.`;
+  if (empty) return;
+
+  el.headline.replaceChildren(
+    figure(`${winRate}%`, 'win rate'),
+    figure(s.streak, 'current streak'),
+    figure(s.maxStreak, 'best streak'),
+  );
+
+  renderDistribution(s, length);
+}
+
+function figure(value, label) {
+  const wrap = document.createElement('div');
+  wrap.className = 'figure';
+  const n = document.createElement('div');
+  n.className = 'figure-value';
+  n.textContent = value;
+  const l = document.createElement('div');
+  l.className = 'figure-label';
+  l.textContent = label;
+  wrap.append(n, l);
+  return wrap;
+}
+
+/** One rung per length, its column height showing the win rate there. */
+function renderLadder(viewing) {
+  el.ladder.replaceChildren();
+
+  for (let n = MIN_LENGTH; n <= MAX_LENGTH; n++) {
+    const s = getStats(n);
+    const rate = s.played ? s.wins / s.played : 0;
+
+    const rung = document.createElement('button');
+    rung.type = 'button';
+    rung.className = s.played ? 'rung' : 'rung empty';
+    rung.dataset.length = n;
+    rung.setAttribute('role', 'tab');
+    rung.setAttribute('aria-selected', String(n === viewing));
+    rung.setAttribute('aria-label', s.played
+      ? `${n} letters, ${Math.round(rate * 100)} percent of ${plural(s.played, 'round')}`
+      : `${n} letters, no rounds yet`);
+
+    const track = document.createElement('span');
+    track.className = 'rung-track';
+    const fill = document.createElement('span');
+    fill.className = 'rung-fill';
+    // a played-but-never-won length still shows a sliver, so it reads as played
+    fill.style.height = s.played ? `${Math.max(6, rate * 100)}%` : '0';
+    track.append(fill);
+
+    const label = document.createElement('span');
+    label.className = 'rung-label';
+    label.textContent = n;
+
+    rung.append(track, label);
+    el.ladder.append(rung);
+  }
+}
+
+function renderDistribution(s, length) {
   const max = Math.max(1, ...s.dist);
+  const highlight = game.over && length === game.length ? game.history.length : 0;
+
   el.dist.replaceChildren(...s.dist.map((count, i) => {
     const row = document.createElement('div');
     row.className = 'dist-row';
-    if (game.over && game.history.length === i + 1) row.classList.add('current');
-    const bar = document.createElement('div');
-    bar.className = 'bar';
-    bar.style.width = `${Math.max(7, (count / max) * 100)}%`;
-    bar.textContent = count;
-    const n = document.createElement('div');
-    n.className = 'n';
+    if (i + 1 === highlight) row.classList.add('current');
+
+    const n = document.createElement('span');
+    n.className = 'dist-n';
     n.textContent = i + 1;
-    row.append(n, bar);
+
+    const track = document.createElement('span');
+    track.className = 'dist-track';
+    const bar = document.createElement('span');
+    bar.className = 'dist-bar';
+    bar.style.width = count ? `max(4px, ${(count / max) * 100}%)` : '0';
+    track.append(bar);
+
+    const value = document.createElement('span');
+    value.className = 'dist-count';
+    value.textContent = count;
+    if (!count) value.classList.add('zero');
+
+    row.append(n, track, value);
     return row;
   }));
 }
@@ -660,12 +740,31 @@ $('splash-help').addEventListener('click', () => { closeSplash(); openModal(el.h
 
 $('help-btn').addEventListener('click', () => openModal(el.helpModal));
 $('settings-btn').addEventListener('click', () => openModal(el.settingsModal));
-$('stats-btn').addEventListener('click', () => { renderStats(); openModal(el.statsModal); });
-$('reset-stats-btn').addEventListener('click', () => {
-  resetStats(game.length);
+$('stats-btn').addEventListener('click', () => {
+  statsView = game.length;
+  renderStats();
+  openModal(el.statsModal);
+});
+
+el.ladder.addEventListener('click', (e) => {
+  const rung = e.target.closest('.rung');
+  if (!rung) return;
+  statsView = Number(rung.dataset.length);
   renderStats();
 });
-$('stats-next-btn').addEventListener('click', () => { closeModals(); newRound(); });
+$('reset-stats-btn').addEventListener('click', () => {
+  resetStats(statsView ?? game.length);
+  renderStats();
+});
+el.statsNext.addEventListener('click', () => {
+  const length = statsView ?? game.length;
+  closeModals();
+  if (length !== game.length) {
+    markLength(length);
+    setPref('length', length);
+  }
+  newRound({ length });
+});
 el.shareBtn.addEventListener('click', async () => {
   const ok = await shareResult();
   el.shareBtn.textContent = ok ? 'Copied!' : 'Copy failed';

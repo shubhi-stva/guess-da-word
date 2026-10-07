@@ -183,19 +183,31 @@
   </div>
 </section>
 
-<section class="modal" id="stats-modal" hidden aria-modal="true" role="dialog" aria-labelledby="stats-title">
+<section class="modal stats-modal" id="stats-modal" hidden aria-modal="true" role="dialog" aria-labelledby="stats-title">
   <button class="modal-close" data-close aria-label="Close">&times;</button>
-  <h2 id="stats-title">Statistics</h2>
-  <div class="stats-scope"><span id="stats-scope-label">5 letters</span></div>
-  <div class="stats-row" id="stats-row"></div>
-  <h3>Guess distribution</h3>
-  <div class="dist" id="dist"></div>
+  <h2 id="stats-title" class="stats-title">Your record</h2>
+
+  <!-- The ladder is the hero: a record per word length, which a one-length
+       game has no need for. It also picks which length you are looking at. -->
+  <div class="ladder" id="ladder" role="tablist" aria-label="Word length"></div>
+
+  <p class="ladder-caption" id="ladder-caption"></p>
+
+  <div class="headline" id="headline"></div>
+
+  <div class="dist-block" id="dist-block">
+    <h3 class="dist-title">Guesses it took</h3>
+    <div class="dist" id="dist"></div>
+  </div>
+
+  <p class="stats-empty" id="stats-empty" hidden></p>
+
   <div class="modal-actions">
-    <button class="btn ghost" id="share-btn" hidden>Share</button>
-    <button class="btn" id="stats-next-btn">New word</button>
+    <button class="btn ghost" id="share-btn" hidden>Share result</button>
+    <button class="btn" id="stats-next-btn">Play</button>
   </div>
   <div class="modal-footer">
-    <button class="link-btn" id="reset-stats-btn">Reset these stats</button>
+    <button class="link-btn" id="reset-stats-btn">Reset</button>
   </div>
 </section>
 
