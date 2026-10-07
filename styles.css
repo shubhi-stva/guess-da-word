@@ -123,7 +123,10 @@ button { font: inherit; }
 }
 
 .board-wrap {
-  flex: 1 1 auto;
+  /* basis 0, not auto: the wrap must take its height from the space left over,
+     not from the grid inside it -- otherwise sizing the grid from the wrap is
+     circular and the two collapse each other. */
+  flex: 1 1 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -132,20 +135,40 @@ button { font: inherit; }
   min-height: 0;
   padding: 10px 16px;
   overflow: hidden;
+  /* The grid reads its space from here with cq units. The wrapper's own size
+     comes from the flex layout, never from the grid, so there is no cycle. */
+  container-type: size;
 }
 
-/* --tile is computed in JS so longer words still fit on a phone. */
-.board { display: grid; gap: var(--gap); }
-.row { display: grid; grid-auto-flow: column; gap: var(--gap); }
+/* The grid solves its own size in CSS: a tile is the largest square that fits
+   both the width and the height available, capped at --tile-max. Nothing is
+   measured in JS, so the board can never race or feed back into its layout.
+   JS only sets --cols and --rows. */
+.board {
+  --tile-size: min(
+    calc((100cqw - (var(--cols, 5) - 1) * var(--gap)) / var(--cols, 5)),
+    calc((100cqh - (var(--rows, 6) - 1) * var(--gap)) / var(--rows, 6)),
+    var(--tile-max)
+  );
+
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-auto-rows: var(--tile-size);
+  gap: var(--gap);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), var(--tile-size));
+  gap: var(--gap);
+}
 
 .tile {
-  width: var(--tile, var(--tile-max));
-  height: var(--tile, var(--tile-max));
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid var(--tile-empty-border);
-  font-size: calc(var(--tile, var(--tile-max)) * .5);
+  font-size: calc(var(--tile-size) * .5);
   font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
@@ -375,7 +398,7 @@ button { font: inherit; }
 .example { margin-bottom: 14px; }
 .example-tiles { display: flex; gap: 4px; margin-bottom: 8px; }
 .example p { margin: 0; }
-.tile.small { --tile: 40px; font-size: 20px; }
+.tile.small { width: 40px; height: 40px; font-size: 20px; }
 
 .note {
   margin-top: 4px !important;
@@ -554,7 +577,8 @@ button { font: inherit; }
 
 .splash-logo { display: flex; gap: 5px; justify-content: center; margin-bottom: 22px; }
 .splash-logo .tile {
-  --tile: 46px;
+  width: 46px;
+  height: 46px;
   font-size: 23px;
   opacity: 0;
   animation: logo-flip .5s ease both;
@@ -634,7 +658,7 @@ button { font: inherit; }
 .splash-byline strong { color: var(--fg); font-weight: 700; }
 
 @media (max-height: 700px) {
-  .splash-logo .tile { --tile: 38px; font-size: 19px; }
+  .splash-logo .tile { width: 38px; height: 38px; font-size: 19px; }
   .splash-twists { padding: 14px 0; margin-bottom: 20px; }
   .splash-tagline { margin-bottom: 18px; }
 }
@@ -712,8 +736,41 @@ button { font: inherit; }
 .tip-close:hover { background: color-mix(in srgb, var(--fg) 10%, transparent); color: var(--fg); }
 
 /* The grid eases into its new size when a tip appears or leaves. */
-.tile {
-  transition: width .3s cubic-bezier(.2, .9, .3, 1),
-              height .3s cubic-bezier(.2, .9, .3, 1),
-              font-size .3s cubic-bezier(.2, .9, .3, 1);
+.board, .row { transition: grid-template-columns .3s cubic-bezier(.2, .9, .3, 1), grid-auto-rows .3s cubic-bezier(.2, .9, .3, 1); }
+
+/* ----------------------------------------------------------------- timer */
+
+.timer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px auto 0;
+  padding: 5px 13px 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  transition: color .3s ease, border-color .3s ease, background-color .3s ease;
+}
+
+.timer-icon { width: 15px; height: 15px; fill: currentColor; }
+
+.timer.warning { color: var(--present); border-color: var(--present); }
+
+.timer.danger {
+  color: #fff;
+  background: #c0392b;
+  border-color: #c0392b;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.timer.paused { opacity: .45; }
+
+@keyframes timer-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
 }

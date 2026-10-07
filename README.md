@@ -9,9 +9,10 @@ the way; everything else follows Wordle: one more guess than the word is long, g
 a letter in the right place, yellow for a letter in the wrong place, a colour-coded
 keyboard, and an optional hard mode that forces you to reuse every revealed hint.
 Stats are kept per word length, so your 5-letter streak is separate from your
-9-letter one. Between rounds a strategy tip occasionally appears above the
-keyboard — always about the game itself, never about the word in play, and it
-can be turned off in settings.
+9-letter one. Each round is on a two-minute clock, which pauses whenever a
+dialog is open and can be switched off in settings. Between rounds a strategy
+tip occasionally appears above the keyboard — always about the game itself,
+never about the word in play, and also optional.
 
 No frameworks, no build step — plain HTML, CSS and ES modules.
 
@@ -60,7 +61,12 @@ length:
 | `answers-N.txt` | ~1,400–2,100 common words; solutions are drawn only from here, so a round is always winnable |
 | `dict-N.txt` | 7,500–54,000 words; the legal-guess set, kept as permissive as possible so a real word is never rejected |
 
-`scripts/build-words.py` regenerates both (`npm run words`).
+`scripts/build-words.py` regenerates both (`npm run words`) and stamps
+`src/words-version.js` with a fingerprint of the generated files. `words.js`
+appends that to every list request, because GitHub Pages serves them with
+`max-age=600` and a browser holding an older copy would otherwise keep
+rejecting words the current build accepts. A test fails if the stamp and the
+lists ever drift apart.
 
 The **answer pool** takes Google's 20k-most-frequent English words and keeps
 only those a case-sensitive spelling dictionary recognises as lowercase words —
@@ -86,6 +92,8 @@ index.html            markup and the two modals
 styles.css            Wordle's palette as CSS custom properties; dark theme swaps values
 src/scoring.js        pure game rules — scoring, hard mode, share grid (no DOM)
 src/tips.js           the strategy tips and the no-repeat cycle that serves them
+src/timer.js          the pausable countdown behind the two-minute round clock
+src/words-version.js  generated fingerprint of words/, used to bust stale caches
 src/words.js          lazy per-length word list loading and answer selection
 src/stats.js          per-length stats and preferences in localStorage
 src/main.js           splash, board, keyboard, input handling, round lifecycle

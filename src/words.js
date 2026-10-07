@@ -5,13 +5,19 @@
  * Lists are fetched lazily per length and cached for the session.
  */
 
+import { WORDS_VERSION } from './words-version.js';
+
 export const MIN_LENGTH = 4;
 export const MAX_LENGTH = 9;
 
 const cache = new Map();
 
 async function fetchList(name) {
-  const res = await fetch(`words/${name}.txt`);
+  // The version is a fingerprint of the generated lists, so a browser holding
+  // an older copy refetches as soon as the lists change. GitHub Pages serves
+  // these with max-age=600; without the stamp a cached list keeps rejecting
+  // words the current build accepts.
+  const res = await fetch(`words/${name}.txt?v=${WORDS_VERSION}`);
   if (!res.ok) throw new Error(`Could not load words/${name}.txt (${res.status})`);
   return (await res.text()).split('\n').map((w) => w.trim()).filter(Boolean);
 }

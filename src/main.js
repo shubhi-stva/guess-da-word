@@ -2,6 +2,7 @@ import { loadWords, pickAnswer, MIN_LENGTH, MAX_LENGTH } from './words.js';
 import { score, hardModeViolation, bestMark, shareGrid, CORRECT } from './scoring.js';
 import { getStats, recordResult, resetStats, getPref, setPref } from './stats.js';
 import { createTipCycle } from './tips.js';
+import { createCountdown, formatClock } from './timer.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -18,10 +19,14 @@ const el = {
   statsModal: $('stats-modal'),
   settingsModal: $('settings-modal'),
   helpTries: $('help-tries'),
+  header: document.querySelector('.header'),
   splash: $('splash'),
   tip: $('tip'),
   tipText: $('tip-text'),
   tipsToggle: $('tips-toggle'),
+  timer: $('timer'),
+  timerValue: $('timer-value'),
+  timerToggle: $('timer-toggle'),
   statsRow: $('stats-row'),
   statsScope: $('stats-scope-label'),
   shareBtn: $('share-btn'),
@@ -32,6 +37,8 @@ const KB_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const TIP_CHANCE = 0.45;      // roughly how often a round opens with a tip
 const TIP_MIN_GAP = 2;        // and never closer together than this many rounds
 const TIP_DURATION = 9000;
+const ROUND_MS = 120000;      // two minutes per round
+const CLOCK_TICK = 200;
 const BACKSPACE_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H7c-.7 0-1.2.4-1.6.9L0 12l5.4 8.1c.4.5 1 .9 1.6.9h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.6L17.6 17 14 13.4 10.4 17 9 15.6l3.6-3.6L9 8.4 10.4 7 14 10.6 17.6 7 19 8.4 15.4 12 19 15.6z"/></svg>';
 const RECENT_MAX = 40;
@@ -44,11 +51,16 @@ let roundCount = 0;
 let lastTipRound = 0;
 let tipTimer = null;
 const nextTip = createTipCycle();
+const countdown = createCountdown(ROUND_MS);
+let clockTimer = null;
 
 /* ---------------------------------------------------------------- board */
 
 function buildBoard(length, rows) {
   el.board.replaceChildren();
+  el.board.style.setProperty('--cols', length);
+  el.board.style.setProperty('--rows', rows);
+
   for (let r = 0; r < rows; r++) {
     const row = document.createElement('div');
     row.className = 'row';
@@ -60,30 +72,6 @@ function buildBoard(length, rows) {
     }
     el.board.append(row);
   }
-  sizeBoard();
-}
-
-/**
- * The grid grows with word length and shrinks with viewport, so tile size is
- * derived from whichever of width/height runs out first.
- */
-function sizeBoard() {
-  if (!game) return;
-  const { length, rows } = game;
-  const gap = 5;
-  const wrap = el.board.parentElement;
-  const pad = getComputedStyle(wrap);
-
-  // clientWidth/Height include padding, so take it off explicitly -- the tip
-  // card claims its space by adding padding here.
-  const availW = wrap.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight) - gap * (length - 1);
-  let availH = wrap.clientHeight - parseFloat(pad.paddingTop) - parseFloat(pad.paddingBottom) - gap * (rows - 1);
-
-  const size = Math.max(24, Math.floor(Math.min(availW / length, availH / rows, 62)));
-  el.board.style.setProperty('--tile', `${size}px`);
-
-  // the tip card floats just above the keyboard, so it needs the real height
-  document.documentElement.style.setProperty('--kb-h', `${el.keyboard.offsetHeight}px`);
 }
 
 const rowAt = (i) => el.board.children[i];
@@ -171,6 +159,60 @@ async function newRound({ length = game?.length ?? 5, keepKeyboard = false } = {
 
   roundCount += 1;
   maybeShowTip();
+  startClock();
+}
+
+/* ----------------------------------------------------------------- clock */
+
+function timerEnabled() {
+  return isOn(el.timerToggle);
+}
+
+function startClock() {
+  stopClock();
+  el.timer.hidden = !timerEnabled();
+  if (!timerEnabled()) return;
+
+  countdown.start();
+  // a dialog open at the start of a round should not burn the clock
+  if (anyDialogOpen()) countdown.pause();
+  renderClock();
+  clockTimer = setInterval(onClockTick, CLOCK_TICK);
+}
+
+function stopClock() {
+  clearInterval(clockTimer);
+  clockTimer = null;
+  countdown.stop();
+}
+
+function onClockTick() {
+  renderClock();
+  if (!countdown.expired()) return;
+  // let an in-flight reveal finish before ending the round on it
+  if (busy) return;
+  stopClock();
+  if (!game.over) finish(false, { timedOut: true });
+}
+
+function renderClock() {
+  const left = countdown.remaining();
+  el.timerValue.textContent = formatClock(left);
+  el.timer.classList.toggle('warning', left <= 30000 && left > 10000);
+  el.timer.classList.toggle('danger', left <= 10000);
+  el.timer.classList.toggle('paused', countdown.paused);
+}
+
+/** The clock stops while any dialog covers the board. */
+function anyDialogOpen() {
+  return !el.splash.hidden || !el.statsModal.hidden || !el.helpModal.hidden || !el.settingsModal.hidden;
+}
+
+function syncClockWithDialogs() {
+  if (!timerEnabled() || !clockTimer) return;
+  if (anyDialogOpen()) countdown.pause();
+  else countdown.resume();
+  renderClock();
 }
 
 /* ------------------------------------------------------------------ tips */
@@ -202,8 +244,6 @@ function showTip(text) {
 
   // Give the card its own space instead of letting it cover the bottom row:
   // the board resizes to fit, and the tiles ease into their new size.
-  sizeBoard();
-
   tipTimer = setTimeout(hideTip, TIP_DURATION);
 }
 
@@ -212,7 +252,6 @@ function hideTip() {
   if (el.tip.hidden) return;
   el.tip.classList.remove('in');
   el.tip.classList.add('out');
-  sizeBoard();
   setTimeout(() => {
     el.tip.hidden = true;
     el.tip.classList.remove('out');
@@ -311,8 +350,10 @@ function celebrate(rowIndex) {
   row.classList.add('win');
 }
 
-function finish(won) {
+function finish(won, { timedOut = false } = {}) {
   game.over = true;
+  stopClock();
+  hideTip();
   const stats = recordResult(game.length, { won, guesses: game.history.length });
 
   if (won) {
@@ -320,7 +361,7 @@ function finish(won) {
     const praise = ['Genius', 'Magnificent', 'Impressive', 'Splendid', 'Great', 'Phew'];
     toast(praise[Math.min(game.history.length - 1, praise.length - 1)]);
   } else {
-    toast(game.answer.toUpperCase());
+    toast(timedOut ? `Time! The word was ${game.answer.toUpperCase()}` : game.answer.toUpperCase());
   }
 
   // Wordle shows the result in the stats panel rather than leaving a toast
@@ -366,6 +407,7 @@ async function shareResult() {
 function openModal(modal) {
   el.backdrop.hidden = false;
   modal.hidden = false;
+  syncClockWithDialogs();
 }
 
 function closeModals() {
@@ -373,11 +415,13 @@ function closeModals() {
   el.helpModal.hidden = true;
   el.statsModal.hidden = true;
   el.settingsModal.hidden = true;
+  syncClockWithDialogs();
 }
 
 function closeSplash() {
   el.splash.hidden = true;
   setPref('seenSplash', true);
+  syncClockWithDialogs();
 }
 
 /* Switches are <button role="switch">, so state lives in aria-checked. */
@@ -521,6 +565,17 @@ el.themeToggle.addEventListener('click', () => {
   setPref('dark', dark);
 });
 
+el.timerToggle.addEventListener('click', () => {
+  setSwitch(el.timerToggle, !timerEnabled());
+  setPref('timer', timerEnabled());
+  if (!timerEnabled()) {
+    stopClock();
+    el.timer.hidden = true;
+  } else if (!game.over) {
+    startClock();   // the current round gets a full two minutes
+  }
+});
+
 $('tip-close').addEventListener('click', hideTip);
 
 el.tipsToggle.addEventListener('click', () => {
@@ -549,7 +604,7 @@ el.shareBtn.addEventListener('click', async () => {
 el.backdrop.addEventListener('click', closeModals);
 for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', closeModals);
 
-window.addEventListener('resize', sizeBoard);
+
 
 function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
@@ -567,6 +622,7 @@ buildLengthGroup(startLength);
 markLength(startLength);
 setSwitch(el.hardMode, getPref('hardMode', false));
 setSwitch(el.tipsToggle, getPref('tips', true));
+setSwitch(el.timerToggle, getPref('timer', true));
 setSwitch(el.themeToggle, document.documentElement.dataset.theme === 'dark');
 
 buildKeyboard();

@@ -33,6 +33,11 @@
 </header>
 
 <main class="game">
+  <div class="timer" id="timer" hidden>
+    <svg class="timer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42a10 10 0 00-1.4-1.4l-1.43 1.41A8 8 0 1012 20a8 8 0 006.03-13.61z"/></svg>
+    <span class="timer-value" id="timer-value">2:00</span>
+  </div>
+
   <div class="board-wrap">
     <div class="board" id="board" role="grid" aria-label="Guess grid"></div>
   </div>
@@ -134,6 +139,14 @@
       <div class="setting-desc">You get one more guess than the word is long</div>
     </div>
     <div class="segmented" id="length-group" role="radiogroup" aria-label="Word length"></div>
+  </div>
+
+  <div class="setting">
+    <div class="setting-text">
+      <div class="setting-name">2-minute timer</div>
+      <div class="setting-desc">Each round is timed. The clock pauses while this panel is open</div>
+    </div>
+    <button class="switch" id="timer-toggle" role="switch" aria-checked="true" aria-label="Two minute timer"><span></span></button>
   </div>
 
   <div class="setting">

@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { score, hardModeViolation, shareGrid, CORRECT, PRESENT, ABSENT } from '../src/scoring.js';
 import { TIPS, createTipCycle } from '../src/tips.js';
+import { WORDS_VERSION } from '../src/words-version.js';
+import { createCountdown, formatClock } from '../src/timer.js';
+import { createHash } from 'node:crypto';
 
 const marks = (guess, answer) =>
   score(guess, answer).map((m) => ({ [CORRECT]: 'G', [PRESENT]: 'Y', [ABSENT]: '.' })[m]).join('');
@@ -130,4 +133,94 @@ test('tips give strategy advice without referencing the current round', () => {
     assert.ok(!forbidden.test(tip), `tip looks round-specific: "${tip}"`);
     assert.ok(tip.length > 20, `tip is too terse: "${tip}"`);
   }
+});
+
+/* --- cache busting --- */
+
+test('the words version matches the lists on disk', () => {
+  // words.js appends this to every list request. If it goes stale, browsers
+  // keep serving a cached list and reject words the current build accepts --
+  // which is exactly how "lured" came to be refused.
+  const dir = new URL('../words/', import.meta.url);
+  const digest = createHash('sha256');
+  for (const name of readdirSync(dir).filter((f) => f.endsWith('.txt')).sort()) {
+    digest.update(name);
+    digest.update(readFileSync(new URL(name, dir)));
+  }
+  assert.equal(
+    WORDS_VERSION,
+    digest.digest('hex').slice(0, 12),
+    'word lists changed without rebuilding: run `npm run words`',
+  );
+});
+
+test('common inflected forms are legal guesses', () => {
+  const words = `lured lures luring baked baking hiked hiking carried carries
+    hoped hoping stared staring saved saving moved moving typed typing
+    tried tries cried dried asked asking walked talked jumped poured
+    boxes dishes churches buses foxes wishes taxes
+    happier happiest bigger biggest easier earlier later latest`.split(/\s+/);
+  const lists = Object.fromEntries(lengths.map((n) => [n, new Set(read(`dict-${n}.txt`))]));
+  const missing = words.filter((w) => w.length >= 4 && w.length <= 9 && !lists[w.length].has(w));
+  assert.deepEqual(missing, [], `these should be legal guesses: ${missing}`);
+});
+
+/* --- countdown --- */
+
+function fakeClock() {
+  let t = 0;
+  const now = () => t;
+  now.advance = (ms) => { t += ms; };
+  return now;
+}
+
+test('a fresh countdown reads the full duration', () => {
+  assert.equal(formatClock(120000), '2:00');
+  const now = fakeClock();
+  const c = createCountdown(120000, now);
+  c.start();
+  assert.equal(formatClock(c.remaining()), '2:00');
+});
+
+test('the countdown drains in real time and then expires', () => {
+  const now = fakeClock();
+  const c = createCountdown(120000, now);
+  c.start();
+  now.advance(30000);
+  assert.equal(formatClock(c.remaining()), '1:30');
+  now.advance(89500);
+  assert.equal(c.expired(), false, 'half a second left is not expired');
+  now.advance(500);
+  assert.equal(c.remaining(), 0);
+  assert.equal(c.expired(), true);
+});
+
+test('pausing freezes the clock and resuming gives the time back', () => {
+  const now = fakeClock();
+  const c = createCountdown(120000, now);
+  c.start();
+  now.advance(20000);
+  c.pause();
+  now.advance(60000);              // a minute spent reading the rules
+  assert.equal(formatClock(c.remaining()), '1:40', 'paused time was counted');
+  c.resume();
+  now.advance(10000);
+  assert.equal(formatClock(c.remaining()), '1:30');
+});
+
+test('a stopped countdown never expires', () => {
+  const now = fakeClock();
+  const c = createCountdown(120000, now);
+  c.start();
+  now.advance(200000);
+  c.stop();
+  assert.equal(c.expired(), false);
+  assert.equal(c.running, false);
+});
+
+test('clock formatting pads seconds and rounds up', () => {
+  assert.equal(formatClock(0), '0:00');
+  assert.equal(formatClock(1), '0:01');
+  assert.equal(formatClock(9000), '0:09');
+  assert.equal(formatClock(61000), '1:01');
 });
