@@ -1,5 +1,5 @@
 /**
- * Pure game rules. No DOM, no storage — this is the part worth unit-testing.
+ * Pure game rules. No DOM, no storage, so this is the part worth unit-testing.
  */
 
 export const CORRECT = 'correct';

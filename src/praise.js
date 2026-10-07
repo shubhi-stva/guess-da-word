@@ -51,7 +51,7 @@ export const LOSS_PHRASES = [
   'That one was sneaky',
   'It got away',
   'Not this time',
-  'Sneaky word. Next one is yours.',
+  'Next one is yours',
 ];
 
 export const TIMEOUT_PHRASES = [

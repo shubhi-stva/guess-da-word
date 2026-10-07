@@ -1,7 +1,7 @@
 /**
  * Word list loading. Two lists per length:
- *   answers-N.txt — common words, the only ones ever chosen as a solution
- *   dict-N.txt    — a much larger dictionary; anything here is a legal guess
+ *   answers-N.txt: common words, the only ones ever chosen as a solution
+ *   dict-N.txt:    a much larger dictionary; anything here is a legal guess
  * Lists are fetched lazily per length and cached for the session.
  */
 

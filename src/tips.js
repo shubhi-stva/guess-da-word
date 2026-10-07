@@ -1,13 +1,13 @@
 /**
  * Occasional strategy tips.
  *
- * These are deliberately about the game itself -- never about the round in
+ * These are deliberately about the game itself, never about the round in
  * progress. Nothing here reads the answer or the player's guesses, so a tip can
  * never leak a hint, and the copy is written to stay true whatever is on screen.
  */
 
 export const TIPS = [
-  'Opening with a word packed with common letters — CRANE, SLATE, AUDIO — rules out the most at once.',
+  'Opening with a word packed with common letters, like CRANE or SLATE, rules out the most at once.',
   'Vowels are useful, but R, S, T, L and N turn up in more words than most vowels do.',
   'A letter can appear twice. A grey tile only means that copy of the letter is not in the word.',
   'Yellow means the letter is in the word, just not there. Move it somewhere new.',
@@ -21,7 +21,7 @@ export const TIPS = [
   'Stuck between two letters in the same slot? Spend a guess on a word containing both.',
   'The keyboard colours track every letter you have tried. Grey keys are as useful as green ones.',
   'Doubled letters catch people out. If a word feels one letter short, try doubling a consonant.',
-  'Switching word length any time starts a fresh word — the current round is not scored.',
+  'Switching word length any time starts a fresh word. The current round is not scored.',
 ];
 
 /**

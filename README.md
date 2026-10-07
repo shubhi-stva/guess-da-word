@@ -8,7 +8,7 @@ sponsored by The New York Times Company. Wordle is a trademark of The New York
 Times Company.
 
 A Wordle-style word game with two changes to the original: you pick how long the
-word is (4–9 letters), and you can play as many rounds as you like instead of
+word is (4 to 9 letters), and you can play as many rounds as you like instead of
 waiting for tomorrow's puzzle.
 
 A welcome screen opens on every visit and holds the game until you press Play;
@@ -17,10 +17,10 @@ a letter in the right place, yellow for a letter in the wrong place, a colour-co
 keyboard, and an optional hard mode that forces you to reuse every revealed hint.
 Stats are kept per word length, so your 5-letter streak is separate from your
 9-letter one. The record panel shows all six lengths at once as a ladder of win
-rates — you can browse any of them and start a round at that length from there. Each round is on a two-minute clock that opens with a 3-2-1
+rates. You can browse any of them and start a round at that length from there. Each round is on a two-minute clock that opens with a 3-2-1
 count-in, pauses whenever a dialog is open, and can be switched off in
 settings. Between rounds a strategy
-tip occasionally appears above the keyboard — always about the game itself,
+tip occasionally appears above the keyboard, always about the game itself,
 never about the word in play, and also optional.
 
 
@@ -42,7 +42,7 @@ npm test           # node --test
 
 The suite covers the scoring rules (including the duplicate-letter cases that
 are easy to get wrong), hard-mode validation, and the shape of the shipped word
-lists — every answer is the right length and is itself a legal guess.
+lists: every answer is the right length and is itself a legal guess.
 
 ## Deploying to GitHub Pages
 
@@ -66,8 +66,8 @@ length:
 
 | File | Role |
 | --- | --- |
-| `answers-N.txt` | ~1,400–2,100 common words; solutions are drawn only from here, so a round is always winnable |
-| `dict-N.txt` | 7,500–54,000 words; the legal-guess set, kept as permissive as possible so a real word is never rejected |
+| `answers-N.txt` | roughly 1,400 to 2,100 common words; solutions are drawn only from here, so a round is always winnable |
+| `dict-N.txt` | 7,500 to 54,000 words; the legal-guess set, kept as permissive as possible so a real word is never rejected |
 
 `scripts/build-words.py` regenerates both (`npm run words`) and stamps
 `src/words-version.js` with a fingerprint of the generated files. `words.js`
@@ -77,14 +77,14 @@ rejecting words the current build accepts. A test fails if the stamp and the
 lists ever drift apart.
 
 The **answer pool** takes Google's 20k-most-frequent English words and keeps
-only those a case-sensitive spelling dictionary recognises as lowercase words —
-that step is what filters out proper nouns like *Cisco* and *Texas* and
+only those a case-sensitive spelling dictionary recognises as lowercase words.
+That step is what filters out proper nouns like *Cisco* and *Texas* and
 contraction forms like *didnt*, which plain word lists happily contain.
 `scripts/blocklist.txt` keeps slurs and explicit terms out of the pool.
 
 The **guess list** is the union of a 370k-entry English word list, the system
 dictionary at `/usr/share/dict/words`, a spelling dictionary's headwords, the
-frequency list, and `scripts/slang.txt` — a curated list of well-known slang
+frequency list, and `scripts/slang.txt`, a curated list of well-known slang
 and modern vocabulary (*selfie*, *podcast*, *emoji*, *yeet*) that older
 dictionaries predate. Regular inflections of each slang entry are generated, so
 the file lists base forms only. Solutions are never drawn from it; it only
@@ -98,7 +98,7 @@ if you want to change the lengths or the sources.
 ```
 index.html            markup and the two modals
 styles.css            Wordle's palette as CSS custom properties; dark theme swaps values
-src/scoring.js        pure game rules — scoring, hard mode, share grid (no DOM)
+src/scoring.js        pure game rules: scoring, hard mode, share grid (no DOM)
 src/praise.js         what the game says at the end of a round, banded by pace
 src/tips.js           the strategy tips and the no-repeat cycle that serves them
 src/timer.js          the pausable countdown behind the two-minute round clock

@@ -149,7 +149,7 @@ async function newRound({ length = game?.length ?? 5, keepKeyboard = false } = {
     busy = false;
     toast(
       location.protocol === 'file:'
-        ? 'Word lists need a web server — see the README'
+        ? 'Word lists need a web server. See the README.'
         : err.message,
       { sticky: true },
     );
@@ -440,7 +440,7 @@ function finish(won, { timedOut = false } = {}) {
     toast(phrases.win(game.history.length, game.rows));
   } else {
     const opener = timedOut ? phrases.timeout() : phrases.loss();
-    toast(`${opener} \u2014 the word was ${game.answer.toUpperCase()}`);
+    toast(`${opener}. The word was ${game.answer.toUpperCase()}`);
   }
 
   // Wordle shows the result in the stats panel rather than leaving a toast
@@ -472,7 +472,7 @@ function dismissToasts() {
 async function shareResult() {
   const won = game.history.length && game.history.at(-1).marks.every((m) => m === CORRECT);
   const tries = won ? game.history.length : 'X';
-  const text = `Guess Da Word — ${game.length} letters ${tries}/${game.rows}\n\n${shareGrid(game.history)}`;
+  const text = `Guess Da Word, ${game.length} letters, ${tries}/${game.rows}\n\n${shareGrid(game.history)}`;
   try {
     await navigator.clipboard.writeText(text);
     return true;

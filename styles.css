@@ -124,7 +124,7 @@ button { font: inherit; }
 
 .board-wrap {
   /* basis 0, not auto: the wrap must take its height from the space left over,
-     not from the grid inside it -- otherwise sizing the grid from the wrap is
+     not from the grid inside it. Otherwise sizing the grid from the wrap is
      circular and the two collapse each other. */
   flex: 1 1 0;
   display: flex;
@@ -485,7 +485,7 @@ button { font: inherit; }
 .stats-modal .link-btn:hover { border-bottom-color: var(--border-strong); }
 
 /* The panel deliberately steps away from the board's chrome: serif numerals,
-   sentence-case labels, and a length ladder -- a record per word length, which
+   sentence-case labels, and a length ladder: a record per word length, which
    is the one thing a single-length word game has no use for. */
 
 .stats-modal { padding-top: 22px; }
@@ -553,7 +553,7 @@ button { font: inherit; }
 .rung[aria-selected="true"] .rung-track { box-shadow: inset 0 0 0 1px var(--border-strong); }
 
 .rung.empty .rung-track {
-  /* played nothing here yet -- a dashed floor, so it does not read as 0% won */
+  /* played nothing here yet, so a dashed floor keeps it clear of a 0% win */
   background: none;
   box-shadow: inset 0 -1px 0 0 var(--border);
   border: 1px dashed var(--border);
