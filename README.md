@@ -23,7 +23,6 @@ settings. Between rounds a strategy
 tip occasionally appears above the keyboard — always about the game itself,
 never about the word in play, and also optional.
 
-No frameworks, no build step — plain HTML, CSS and ES modules.
 
 ## Running it locally
 
