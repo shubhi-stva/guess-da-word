@@ -1,5 +1,10 @@
 # Guess Da Word
 
+A fun twist on Wordle, the classic daily word game from The New York Times.
+This is an independent fan project, not affiliated with, endorsed by, or
+sponsored by The New York Times Company. Wordle is a trademark of The New York
+Times Company.
+
 A Wordle-style word game with two changes to the original: you pick how long the
 word is (4–9 letters), and you can play as many rounds as you like instead of
 waiting for tomorrow's puzzle.
